@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Admin } from 'typeorm';
+import { Admin } from './Admin/Admin.model';
 import { Cash } from './Cash/Cash.model';
 import { Currency } from './Currency/Currency.model';
 import { Customer } from './Customer/Customer.model';
