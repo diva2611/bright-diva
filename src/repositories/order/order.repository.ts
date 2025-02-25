@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { FindOptions, Transaction } from 'sequelize';
-import { OrderCreationAttributes } from 'src/models/order/Order.base';
+import { OrderCreationAttributes } from 'src/models/Order/Order.base';
 import { Order } from 'src/models/Order/Order.model';
 
 
