@@ -1,0 +1,80 @@
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: 'tsconfig.json',
+    tsconfigRootDir: __dirname,
+    sourceType: 'module',
+  },
+  plugins: ['@typescript-eslint/eslint-plugin', 'import', 'sort-keys'],
+  extends: [
+    'eslint:recommended',
+    'airbnb-base',
+    'airbnb-typescript/base',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    'prettier',
+    'plugin:prettier/recommended',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+  ],
+  root: true,
+  env: {
+    node: true,
+    jest: true,
+  },
+  ignorePatterns: ['.eslintrc.js', 'db/migrate.js', 'db/seed.js'],
+  rules: {
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/interface-name-prefix': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/space-before-blocks': 'off',
+    'arrow-body-style': 'off',
+    'class-methods-use-this': 'off',
+    'import/no-cycle': 'error',
+    'import/prefer-default-export': 'off',
+    'lines-between-class-members': ['error', 'always'],
+    'max-classes-per-file': 'off',
+    'no-console': 'warn',
+    'no-else-return': [
+      'error',
+      {
+        allowElseIf: false,
+      },
+    ],
+    'no-underscore-dangle': 'off',
+    'no-return-await': 'error',
+    'object-shorthand': ['error', 'properties'],
+    'prefer-template': 'error',
+    'prettier/prettier': [
+      'error',
+      {
+        bracketSpacing: true,
+        endOfLine: 'auto',
+        printWidth: 100,
+        quoteProps: 'as-needed',
+        semi: true,
+        singleQuote: true,
+        tabWidth: 4,
+        trailingComma: 'all',
+      },
+    ],
+    'sort-keys': 'off',
+    'sort-keys/sort-keys-fix': [
+      'warn',
+      'asc',
+      {
+        minKeys: 5,
+        natural: true,
+      },
+    ],
+  },
+  overrides: [
+    {
+      files: ['db/migrations/*.ts', 'db/seeders/*.ts'],
+      rules: {
+        'sort-keys/sort-keys-fix': ['off'],
+      },
+    },
+  ],
+};

@@ -1,0 +1,404 @@
+import {
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InvoiceRepository } from '../../repositories/invoice/invoice.repository';
+import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { CreateInvoiceResponseDto } from './dto/create-invoice-res.dto';
+import { Currency } from '../../common/enum/currency.enum';
+import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { UpdateInvoiceResponseDto } from './dto/update-invoice-res.dto';
+import { DeleteInvoiceResponseDto } from './dto/delete-invoice.res.dto';
+import { AdminRepository } from '../../repositories/admin/admin.repository';
+import { Role } from '../../common/enum/role.enum';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { InvoicePaymentStatusDto } from './dto/invoice-payment-status.dto';
+import { CashRepository } from '../../repositories/cash/cash.repository';
+import { CurrencyRepository } from '../../repositories/currency/currency-repository';
+import { Invoice } from 'src/models/Invoice/Invoice.model';
+import { Customer } from 'src/models/Customer/Customer.model';
+
+@Injectable()
+export class InvoiceService {
+  constructor(
+    private readonly invoiceRepository: InvoiceRepository,
+    private readonly currencyRepository: CurrencyRepository,
+    private readonly cashRepository: CashRepository,
+    private readonly adminRepository: AdminRepository,
+  ) {}
+
+  async getInvoiceList(
+    userId: string,
+    query?: PaginationQueryDto,
+  ): Promise<{ invoices: Invoice[]; total: number; statusCode: number }> {
+    try {
+      const adminData = await this.adminRepository.findOneByClause({
+        where: { id: userId },
+      });
+
+      if (!adminData) {
+        throw new UnauthorizedException('You are not authorized');
+      }
+
+      let invoiceData: Invoice[];
+      let total: number;
+
+      const whereClause =
+        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+
+      if (query.page === 0) {
+        invoiceData = await this.invoiceRepository.findAllByClause({
+          where: whereClause,
+          include: [Customer],
+        });
+        total = invoiceData.length;
+      } else {
+        const offset = (query.page - 1) * query.limit;
+        const { rows, count } =
+          await this.invoiceRepository.findAndCountAllByClause({
+            where: whereClause,
+            include: [Customer],
+            limit: query.limit,
+            offset,
+          });
+
+        invoiceData = rows;
+        total = count;
+      }
+
+      return {
+        invoices: invoiceData,
+        total,
+        statusCode: 200,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during fetching invoices',
+        error,
+      );
+    }
+  }
+
+  async getInvoicePaymentStatus(
+    invoiceId: string,
+    userId: string,
+  ): Promise<InvoicePaymentStatusDto> {
+    try {
+      const adminData = await this.adminRepository.findOneByClause({
+        where: { id: userId },
+      });
+
+      if (!adminData) {
+        throw new UnauthorizedException('You are not authorized');
+      }
+
+      let invoice: Invoice;
+
+      if (adminData.role === Role.EXECUTIVE) {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id: invoiceId, createdBy: userId },
+          include: [Customer],
+        });
+      } else {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id: invoiceId },
+          include: [Customer],
+        });
+      }
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      const cashEntries = await this.cashRepository.findAllByClause({
+        where: { invoiceNumber: invoice.invoiceNumber },
+      });
+
+      const totalPaidFromCash = cashEntries.reduce(
+        (total, cash) =>
+          total +
+          (isNaN(Number(cash.amountInHkd)) ? 0 : Number(cash.amountInHkd)),
+        0,
+      );
+
+      const remainingAmount = invoice.amountInHkd - totalPaidFromCash;
+
+      return {
+        invoiceNumber: invoice.invoiceNumber,
+        totalAmount: Number(invoice.amountInHkd),
+        amountPaid: totalPaidFromCash,
+        remainingAmount,
+        isFullyPaid: remainingAmount <= 0,
+        invoiceData: invoice,
+        cashData: cashEntries,
+        statusCode: 200,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during fetching invoices',
+        error || error.message,
+      );
+    }
+  }
+
+  private readonly conversionRates = {
+    [Currency.MOP]: 0.96,
+    [Currency.HKD]: 1.03,
+    [Currency.CNY]: 0.87,
+  };
+
+  async createInvoice(
+    invoiceData: CreateInvoiceDto,
+    userId: string,
+  ): Promise<CreateInvoiceResponseDto> {
+    try {
+      const { currency, amount } = invoiceData;
+
+      if (!this.conversionRates[currency]) {
+        throw new InternalServerErrorException(
+          `Unsupported currency: ${currency}`,
+        );
+      }
+
+      const currencyDetails = await this.currencyRepository.findOneByClause({
+        where: { baseCurrency: Currency.HKD },
+      });
+
+      if (!currencyDetails) {
+        throw new NotFoundException('Currency not found');
+      }
+
+      let amountInHkd = invoiceData.amount;
+
+      if (invoiceData.currency === Currency.CNY) {
+        amountInHkd = invoiceData.amount / currencyDetails.hkdToCny;
+      } else if (invoiceData.currency === Currency.MOP) {
+        amountInHkd = invoiceData.amount / currencyDetails.hkdToMop;
+      }
+
+      const createdInvoice = await this.invoiceRepository.createInvoice({
+        ...invoiceData,
+        amountInHkd,
+        createdBy: userId,
+      });
+      if (!createdInvoice) {
+        throw new InternalServerErrorException('Unable to create the invoice');
+      }
+      return {
+        success: true,
+        statusCode: 201,
+        id: createdInvoice?.id,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during creating invoice',
+        error.message || error,
+      );
+    }
+  }
+
+  async getInvoiceById(
+    id: string,
+    userId: string,
+  ): Promise<{ invoice: Invoice; statusCode: number }> {
+    try {
+      const adminData = await this.adminRepository.findOneByClause({
+        where: { id: userId },
+      });
+
+      if (!adminData) {
+        throw new UnauthorizedException('You are not authorized');
+      }
+
+      let invoice: Invoice;
+
+      if (adminData.role === Role.EXECUTIVE) {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id, createdBy: userId },
+          include: [Customer],
+        });
+      } else {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id },
+          include: [Customer],
+        });
+      }
+
+      if (
+        adminData.role === Role.EXECUTIVE &&
+        adminData.id !== invoice.createdBy
+      ) {
+        throw new UnauthorizedException(
+          'You are not authorized to see the invoice',
+        );
+      }
+      if (!invoice) {
+        throw new NotFoundException(`Invoice with ID ${id} not found`);
+      }
+
+      return {
+        invoice,
+        statusCode: 200,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during fetching invoice',
+        error,
+      );
+    }
+  }
+
+  async updateInvoice(
+    id: string,
+    updateInvoiceDto: UpdateInvoiceDto,
+    userId: string,
+  ): Promise<UpdateInvoiceResponseDto> {
+    try {
+      const adminData = await this.adminRepository.findOneByClause({
+        where: { id: userId },
+      });
+
+      if (!adminData) {
+        throw new UnauthorizedException('You are not authorized');
+      }
+
+      let invoice: Invoice;
+
+      if (adminData.role === Role.EXECUTIVE) {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id, createdBy: userId },
+        });
+      } else {
+        invoice = await this.invoiceRepository.findById(id);
+      }
+
+      if (
+        adminData.role === Role.EXECUTIVE &&
+        adminData.id !== invoice.createdBy
+      ) {
+        throw new UnauthorizedException(
+          'You are not authorized to edit the invoice',
+        );
+      }
+
+      if (!invoice) {
+        throw new NotFoundException(`Invoice with ID ${id} not found`);
+      }
+
+      const currencyDetails = await this.currencyRepository.findOneByClause({
+        where: { baseCurrency: Currency.HKD },
+      });
+
+      if (!currencyDetails) {
+        throw new NotFoundException('Currency not found');
+      }
+
+      let amountInHkd = updateInvoiceDto.amount;
+
+      if (
+        updateInvoiceDto.currency === Currency.CNY ||
+        invoice.currency === Currency.CNY
+      ) {
+        amountInHkd = updateInvoiceDto.amount / currencyDetails.hkdToCny;
+      } else if (
+        updateInvoiceDto.currency === Currency.MOP ||
+        invoice.currency === Currency.MOP
+      ) {
+        amountInHkd = updateInvoiceDto.amount / currencyDetails.hkdToMop;
+      }
+
+      const updateDto = { amountInHkd, ...updateInvoiceDto };
+
+      const success = await this.invoiceRepository.updateById(invoice.id, {
+        ...updateDto,
+        updatedAt: new Date(),
+      });
+
+      if (!success) {
+        throw new InternalServerErrorException(
+          'Error during updating the invoice',
+        );
+      }
+
+      return { success, id: invoice.id, statusCode: 200 };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during updating invoice',
+        error,
+      );
+    }
+  }
+
+  async deleteInvoice(
+    id: string,
+    userId: string,
+  ): Promise<DeleteInvoiceResponseDto> {
+    try {
+      const adminData = await this.adminRepository.findOneByClause({
+        where: { id: userId },
+      });
+
+      if (!adminData) {
+        throw new UnauthorizedException('You are not authorized');
+      }
+
+      let invoice: Invoice;
+
+      if (adminData.role === Role.EXECUTIVE) {
+        invoice = await this.invoiceRepository.findOneByClause({
+          where: { id, createdBy: userId },
+        });
+      } else {
+        invoice = await this.invoiceRepository.findById(id);
+      }
+
+      if (
+        adminData.role === Role.EXECUTIVE &&
+        adminData.id !== invoice.createdBy
+      ) {
+        throw new UnauthorizedException(
+          'You are not authorized to see the invoice',
+        );
+      }
+      if (!invoice) {
+        throw new NotFoundException(`Invoice with ID ${id} not found`);
+      }
+
+      const success = await this.invoiceRepository.deleteByClause({
+        where: { id: invoice.id },
+      });
+      if (!success) {
+        throw new InternalServerErrorException(
+          'Error during deleting the invoice',
+        );
+      }
+      return { success: true, statusCode: 200 };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error during deleting invoice',
+        error,
+      );
+    }
+  }
+}
