@@ -26,6 +26,11 @@ export class UpdateInvoiceDto {
   @Transform(({ value }) => new Date(value))
   readonly invoiceDate?: Date;
 
+  @IsDate()
+  @IsOptional()
+  @Transform(({ value }) => new Date(value))
+  readonly expectedPaymentDate?: Date;
+
   @IsNumber()
   @IsOptional()
   totalUnits?: number;

@@ -83,6 +83,12 @@ export class InvoiceBase extends Model<InvoiceBase, InvoiceCreationAttributes> {
   invoiceDate: Date;
 
   @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  expectedPaymentDate: Date;
+
+  @Column({
     field: 'created_at',
     type: DataType.DATE,
     allowNull: false,
