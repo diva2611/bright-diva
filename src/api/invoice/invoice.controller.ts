@@ -55,7 +55,12 @@ export class InvoiceController {
   async getInvoiceById(
     @Param('id') id: string,
     @Req() request: Request,
-  ): Promise<{ invoice: Invoice; statusCode: number }> {
+  ): Promise<{
+    invoice: Invoice;
+    statusCode: number;
+    totalPaidAmount: number;
+    remainingAmount: number;
+  }> {
     const { id: userId } = request.user as Admin;
     return await this.invoiceService.getInvoiceById(id, userId);
   }

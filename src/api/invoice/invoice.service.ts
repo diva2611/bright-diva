@@ -212,7 +212,12 @@ export class InvoiceService {
   async getInvoiceById(
     id: string,
     userId: string,
-  ): Promise<{ invoice: Invoice; statusCode: number }> {
+  ): Promise<{
+    invoice: Invoice;
+    statusCode: number;
+    totalPaidAmount: number;
+    remainingAmount: number;
+  }> {
     try {
       const adminData = await this.adminRepository.findOneByClause({
         where: { id: userId },
@@ -248,8 +253,21 @@ export class InvoiceService {
         throw new NotFoundException(`Invoice with ID ${id} not found`);
       }
 
+      const cashDetails = await this.cashRepository.findAllByClause({
+        where: { invoiceNumber: invoice.invoiceNumber },
+      });
+
+      const paidAmount = cashDetails.map((item) =>
+        parseFloat(String(item.amountInHkd)),
+      );
+      const totalPaidAmount = paidAmount.reduce((acc, curr) => acc + curr, 0);
+
+      const remainingAmount = invoice?.amountInHkd - totalPaidAmount;
+
       return {
         invoice,
+        totalPaidAmount,
+        remainingAmount,
         statusCode: 200,
       };
     } catch (error) {
