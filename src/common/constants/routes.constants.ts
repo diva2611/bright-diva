@@ -6,6 +6,7 @@ export const ROUTES = {
   CUSTOMER: 'customer',
   DASHBOARD: 'dashboard',
   CURRENCY: 'currency',
+  MIS: 'mis',
 };
 export const VERSION_1 = 'v1';
 export const API_PREFIX = 'api';

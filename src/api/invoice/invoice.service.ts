@@ -20,6 +20,7 @@ import { CashRepository } from '../../repositories/cash/cash.repository';
 import { CurrencyRepository } from '../../repositories/currency/currency-repository';
 import { Invoice } from 'src/models/Invoice/Invoice.model';
 import { Customer } from 'src/models/Customer/Customer.model';
+import { InvoiceListResDto } from './dto/invoice-list-res.dto';
 
 @Injectable()
 export class InvoiceService {
@@ -33,7 +34,7 @@ export class InvoiceService {
   async getInvoiceList(
     userId: string,
     query?: PaginationQueryDto,
-  ): Promise<{ invoices: Invoice[]; total: number; statusCode: number }> {
+  ): Promise<InvoiceListResDto> {
     try {
       const adminData = await this.adminRepository.findOneByClause({
         where: { id: userId },
@@ -43,7 +44,7 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let invoiceData: Invoice[];
+      let invoiceData;
       let total: number;
 
       const whereClause =
@@ -67,6 +68,23 @@ export class InvoiceService {
 
         invoiceData = rows;
         total = count;
+      }
+
+      for (const invoice of invoiceData) {
+        const cashDetails = await this.cashRepository.findAllByClause({
+          where: { invoiceNumber: invoice.invoiceNumber },
+        });
+
+        const paidAmount = cashDetails.map((item) =>
+          parseFloat(String(item.amountInHkd)),
+        );
+
+        const totalPaidAmount = paidAmount.reduce((acc, curr) => acc + curr, 0);
+        const remainingAmount =
+          parseFloat(invoice.amountInHkd) - totalPaidAmount;
+
+        invoice.setDataValue('totalPaidAmount', totalPaidAmount);
+        invoice.setDataValue('remainingAmount', remainingAmount);
       }
 
       return {

@@ -24,6 +24,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { InvoicePaymentStatusDto } from './dto/invoice-payment-status.dto';
 import { Invoice } from 'src/models/Invoice/Invoice.model';
 import { Admin } from 'src/models/Admin/Admin.model';
+import { InvoiceListResDto } from './dto/invoice-list-res.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -35,7 +36,7 @@ export class InvoiceController {
   async getInvoices(
     @Req() request: Request,
     @Query() query?: PaginationQueryDto,
-  ): Promise<{ invoices: Invoice[]; total: number; statusCode: number }> {
+  ): Promise<InvoiceListResDto> {
     const { id: userId } = request.user as Admin;
     return await this.invoiceService.getInvoiceList(userId, query);
   }

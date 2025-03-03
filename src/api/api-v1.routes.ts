@@ -12,6 +12,7 @@ import { CashModule } from './cash/cash.module';
 import { CustomerModule } from './customer/customer.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CurrencyModule } from './currency/currency.module';
+import { MisModule } from './Mis/mis.module';
 
 export const routes: Routes = [
   {
@@ -41,10 +42,13 @@ export const routes: Routes = [
         path: ROUTES.DASHBOARD,
         module: DashboardModule,
       },
-
       {
         path: ROUTES.CURRENCY,
         module: CurrencyModule,
+      },
+      {
+        path: ROUTES.MIS,
+        module: MisModule,
       },
     ],
   },
@@ -59,4 +63,5 @@ export const ApiV1Imports = [
   CustomerModule,
   DashboardModule,
   CurrencyModule,
+  MisModule,
 ];
