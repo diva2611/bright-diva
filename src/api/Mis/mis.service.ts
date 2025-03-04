@@ -81,19 +81,16 @@ export class MisService {
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(`MIS Report for ${type}`);
-
-      // Extract headers
       const headers = Object.keys(formattedData[0]);
-
-      // Apply styles to headers
       const headerRow = worksheet.addRow(headers);
+
       headerRow.eachCell((cell, colNumber) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFF' } }; // White text
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } }; 
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: '0070C0' }, // Blue background
+          fgColor: { argb: '0070C0' },
         };
         cell.border = {
           top: { style: 'thin' },
@@ -103,15 +100,12 @@ export class MisService {
         };
       });
 
-      // Auto-adjust column widths dynamically based on content
       const columnWidths = headers.map((header) => header.length + 5);
 
-      // Add data rows with alternating row colors
       formattedData.forEach((record, rowIndex) => {
         const row = worksheet.addRow(Object.values(record));
 
         row.eachCell((cell, colNumber) => {
-          // Apply border
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -119,19 +113,16 @@ export class MisService {
             right: { style: 'thin' },
           };
 
-          // Alternate row colors
           if (rowIndex % 2 === 0) {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'EAF1FB' }, // Light blue for alternating rows
+              fgColor: { argb: 'EAF1FB' },
             };
           }
 
-          // Wrap text and align properly
           cell.alignment = { wrapText: true, vertical: 'middle' };
 
-          // Adjust column width dynamically
           const cellValue = String(cell.value);
           columnWidths[colNumber - 1] = Math.max(
             columnWidths[colNumber - 1],
@@ -139,11 +130,9 @@ export class MisService {
           );
         });
 
-        // Adjust row height for better visibility
         row.height = 20;
       });
 
-      // Set final column widths
       columnWidths.forEach((width, index) => {
         worksheet.getColumn(index + 1).width = width;
       });
