@@ -25,8 +25,8 @@ export const up: Seed = async ({ context: queryInterface }) => {
       [
         {
           id: '00000000-0000-0000-0000-000000000001',
-          name: 'John Doe',
-          username: 'john1234',
+          name: 'Sam Govil',
+          username: 'sam1234',
           email_id: ADMIN_EMAIL,
           password: hashedAdminPassword,
           role: 'Admin',
@@ -38,8 +38,8 @@ export const up: Seed = async ({ context: queryInterface }) => {
         },
         {
           id: '00000000-0000-0000-0000-000000000002',
-          name: 'Jane Executive',
-          username: 'jane1234',
+          name: 'Cammy',
+          username: 'cammy789',
           email_id: EXECUTIVE_EMAIL,
           password: hashedExecutivePassword,
           role: 'Executive',
