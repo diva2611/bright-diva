@@ -34,19 +34,13 @@ export class CustomerService {
       let customersData: Customer[];
       let total: number;
 
-      const whereClause =
-        adminData.role === Role.EXECUTIVE ? { createdBy: userId } : {};
-
       if (query.page === 0) {
-        customersData = await this.customerRepository.findAllByClause({
-          where: whereClause,
-        });
+        customersData = await this.customerRepository.findAll();
         total = customersData.length;
       } else {
         const offset = (query.page - 1) * query.limit;
         const { rows, count } =
           await this.customerRepository.findAndCountAllByClause({
-            where: whereClause,
             limit: query.limit,
             offset,
           });
