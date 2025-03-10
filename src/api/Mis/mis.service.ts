@@ -42,11 +42,28 @@ export class MisService {
       const filter: any = {};
 
       const dateFilter = {};
+
+      const convertToUTC = (dateString: string, isEndOfDay = false) => {
+        const date = new Date(dateString);
+
+        date.setUTCHours(
+          isEndOfDay ? 23 : 0,
+          isEndOfDay ? 59 : 0,
+          isEndOfDay ? 59 : 0,
+          isEndOfDay ? 999 : 0,
+        );
+
+        return date;
+      };
+
       if (fromDate) {
-        dateFilter[Op.gte] = new Date(fromDate);
+        const startOfDay = convertToUTC(fromDate);
+        dateFilter[Op.gte] = startOfDay;
       }
+
       if (toDate) {
-        dateFilter[Op.lte] = new Date(toDate);
+        const endOfDay = convertToUTC(toDate, true);
+        dateFilter[Op.lte] = endOfDay;
       }
 
       if (fromDate && toDate) {
@@ -81,11 +98,15 @@ export class MisService {
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(`MIS Report for ${type}`);
-      const headers = Object.keys(formattedData[0]);
+
+      const headers = Object.keys(formattedData[0]).map(
+        (header) => header.charAt(0).toUpperCase() + header.slice(1),
+      );
+
       const headerRow = worksheet.addRow(headers);
 
       headerRow.eachCell((cell, colNumber) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFF' } }; 
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = {
           type: 'pattern',
