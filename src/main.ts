@@ -13,6 +13,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+  
   app.use('/reports', express.static(join(process.cwd(), 'reports')));
   await app.listen(3000);
   Logger.log(`Application is running on PORT ${process.env.APP_PORT}`);
