@@ -94,7 +94,7 @@ export class MisService {
         throw new NotFoundException('No records found for the given filters');
       }
 
-     const formattedData = data.map((record) => {
+       const formattedData = data.map((record) => {
         const values = { ...record.dataValues };
 
         if (values.amount !== undefined) {
