@@ -94,7 +94,25 @@ export class MisService {
         throw new NotFoundException('No records found for the given filters');
       }
 
-      const formattedData = data.map((record) => record.dataValues);
+     const formattedData = data.map((record) => {
+        const values = { ...record.dataValues };
+
+        if (values.amount !== undefined) {
+          values.amount = parseFloat(values.amount).toFixed(2);
+        }
+
+        if (values.amountInHkd !== undefined) {
+          values.amountInHkd = parseFloat(values.amountInHkd).toFixed(2);
+        }
+
+        if (values.amountOfDelivery !== undefined) {
+          values.amountOfDelivery = parseFloat(values.amountOfDelivery).toFixed(
+            2,
+          );
+        }
+
+        return values;
+      });
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(`MIS Report for ${type}`);
