@@ -19,6 +19,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CurrencyRepository } from '../../repositories/currency/currency-repository';
 import { Cash } from 'src/models/Cash/Cash.model';
 import { Customer } from 'src/models/Customer/Customer.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class CashService {
@@ -149,16 +150,69 @@ export class CashService {
         throw new UnauthorizedException('You are not authorized');
       }
 
+      const whereClause: any =
+        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+      const searchValue = `%${query.search}%`;
+
+      if (query?.search) {
+        whereClause[Op.or] = [
+          { receiptNumber: { [Op.like]: searchValue } },
+          { invoiceNumber: { [Op.like]: searchValue } },
+          { pickedBy: { [Op.like]: searchValue } },
+          { cashPickupDate: { [Op.like]: searchValue } },
+          { pickupTime: { [Op.like]: searchValue } },
+          { amount: { [Op.like]: searchValue } },
+          { amountInHkd: { [Op.like]: searchValue } },
+          { currency: { [Op.like]: searchValue } },
+          {
+            partialDelivery: {
+              [Op.like]: query.search.toLowerCase().includes('true')
+                ? true
+                : query.search.toLowerCase().includes('false')
+                  ? false
+                  : undefined,
+            },
+          },
+        ];
+      }
+
+      let orderClause: any = [['createdAt', 'DESC']];
+      if (query?.sortBy) {
+        const [field, direction] = query.sortBy.split(':');
+        if (field && ['asc', 'desc'].includes(direction?.toLowerCase())) {
+          orderClause = [[field, direction.toUpperCase()]];
+        }
+      }
+
+      const includes = [
+        {
+          model: Customer,
+          where: query?.search
+            ? {
+                [Op.or]: [
+                  { address: { [Op.like]: searchValue } },
+                  { city: { [Op.like]: searchValue } },
+                  { country: { [Op.like]: searchValue } },
+                  { contactPersonName: { [Op.like]: searchValue } },
+                  { companyName: { [Op.like]: searchValue } },
+                  { mobileNumber: { [Op.like]: searchValue } },
+                  { emailId: { [Op.like]: searchValue } },
+                  { businessRegistrationNumber: { [Op.like]: searchValue } },
+                ],
+              }
+            : undefined,
+          required: false,
+        },
+      ];
+
       let cashData: Cash[];
       let total: number;
-
-      const whereClause =
-        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
 
       if (query.page === 0) {
         cashData = await this.cashRepository.findAllByClause({
           where: whereClause,
-          include: [Customer],
+          order: orderClause,
+          include: includes,
         });
         total = cashData.length;
       } else {
@@ -166,9 +220,10 @@ export class CashService {
         const { rows, count } =
           await this.cashRepository.findAndCountAllByClause({
             where: whereClause,
-            include: [Customer],
+            order: orderClause,
             limit: query.limit,
             offset,
+            include: includes,
           });
         cashData = rows;
         total = count;

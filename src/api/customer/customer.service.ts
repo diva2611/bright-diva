@@ -13,6 +13,7 @@ import { UpdateCustomerResponseDto } from './dto/update-customer.res';
 import { DeleteCustomerResponseDto } from './dto/delete-customer.res';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { Customer } from 'src/models/Customer/Customer.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class CustomerService {
@@ -31,16 +32,45 @@ export class CustomerService {
         throw new UnauthorizedException('You are not authorized');
       }
 
+      const whereClause: any = {};
+
+      if (query?.search) {
+        const searchValue = `%${query.search}%`;
+        whereClause[Op.or] = [
+          { address: { [Op.like]: searchValue } },
+          { city: { [Op.like]: searchValue } },
+          { country: { [Op.like]: searchValue } },
+          { contactPersonName: { [Op.like]: searchValue } },
+          { companyName: { [Op.like]: searchValue } },
+          { mobileNumber: { [Op.like]: searchValue } },
+          { emailId: { [Op.like]: searchValue } },
+          { businessRegistrationNumber: { [Op.like]: searchValue } },
+        ];
+      }
+
+      let orderClause: any = [['createdAt', 'DESC']];
+      if (query?.sortBy) {
+        const [field, direction] = query.sortBy.split(':');
+        if (field && ['asc', 'desc'].includes(direction?.toLowerCase())) {
+          orderClause = [[field, direction.toUpperCase()]];
+        }
+      }
+
       let customersData: Customer[];
       let total: number;
 
       if (query.page === 0) {
-        customersData = await this.customerRepository.findAll();
+        customersData = await this.customerRepository.findAllByClause({
+          where: whereClause,
+          order: orderClause,
+        });
         total = customersData.length;
       } else {
         const offset = (query.page - 1) * query.limit;
         const { rows, count } =
           await this.customerRepository.findAndCountAllByClause({
+            where: whereClause,
+            order: orderClause,
             limit: query.limit,
             offset,
           });

@@ -20,6 +20,7 @@ import { CustomerRepository } from '../../repositories/customer/customer.reposit
 import { CurrencyRepository } from '../../repositories/currency/currency-repository';
 import { Order } from 'src/models/Order/Order.model';
 import { Customer } from 'src/models/Customer/Customer.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class OrderService {
@@ -193,16 +194,68 @@ export class OrderService {
         throw new UnauthorizedException('You are not authorized');
       }
 
+      const whereClause: any =
+        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+      const searchValue = `%${query.search}%`;
+
+      if (query?.search) {
+        whereClause[Op.or] = [
+          { orderNumber: { [Op.like]: searchValue } },
+          { invoiceNumber: { [Op.like]: searchValue } },
+          { amountOfDelivery: { [Op.like]: searchValue } },
+          { amountInHkd: { [Op.like]: searchValue } },
+          { deliveredUnits: { [Op.like]: searchValue } },
+          { currency: { [Op.like]: searchValue } },
+          {
+            partialDelivery: {
+              [Op.eq]:
+                query.search.toLowerCase() === 'true'
+                  ? true
+                  : query.search.toLowerCase() === 'false'
+                    ? false
+                    : undefined,
+            },
+          },
+        ];
+      }
+
+      let orderClause: any = [['createdAt', 'DESC']];
+      if (query?.sortBy) {
+        const [field, direction] = query.sortBy.split(':');
+        if (field && ['asc', 'desc'].includes(direction?.toLowerCase())) {
+          orderClause = [[field, direction.toUpperCase()]];
+        }
+      }
+
+      const includes = [
+        {
+          model: Customer,
+          required: false,
+          where: query?.search
+            ? {
+                [Op.or]: [
+                  { address: { [Op.like]: searchValue } },
+                  { city: { [Op.like]: searchValue } },
+                  { country: { [Op.like]: searchValue } },
+                  { contactPersonName: { [Op.like]: searchValue } },
+                  { companyName: { [Op.like]: searchValue } },
+                  { mobileNumber: { [Op.like]: searchValue } },
+                  { emailId: { [Op.like]: searchValue } },
+                  { businessRegistrationNumber: { [Op.like]: searchValue } },
+                ],
+              }
+            : undefined,
+        },
+      ];
+
       let orderData: Order[];
       let total: number;
-
-      const whereClause =
-        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
 
       if (query.page === 0) {
         orderData = await this.orderRepository.findAllByClause({
           where: whereClause,
-          include: [Customer],
+          include: includes,
+          order: orderClause,
         });
         total = orderData.length;
       } else {
@@ -210,9 +263,10 @@ export class OrderService {
         const { rows, count } =
           await this.orderRepository.findAndCountAllByClause({
             where: whereClause,
-            include: [Customer],
+            include: includes,
             limit: query.limit,
             offset,
+            order: orderClause,
           });
 
         orderData = rows;

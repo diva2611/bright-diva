@@ -34,10 +34,37 @@ export class UsersService {
 
       const page = query?.page ?? 1;
       const limit = query?.limit ?? 10;
+      const search = query?.search?.trim();
+
+      const searchClause = search
+        ? {
+            [Op.or]: [
+              { name: { [Op.like]: `%${search}%` } },
+              { emailId: { [Op.like]: `%${search}%` } },
+              { username: { [Op.like]: `%${search}%` } },
+              { phoneNo: { [Op.like]: `%${search}%` } },
+              { role: { [Op.like]: `%${search}%` } },
+            ],
+          }
+        : {};
+
+      let orderClause: any = [['createdAt', 'DESC']];
+      if (query?.sortBy) {
+        const [field, direction] = query.sortBy.split(':');
+        if (field && ['asc', 'desc'].includes(direction?.toLowerCase())) {
+          orderClause = [[field, direction.toUpperCase()]];
+        }
+      }
+
+      const baseWhereClause = {
+        id: { [Op.notIn]: [userId] },
+        ...searchClause,
+      };
 
       if (page === 0) {
         const users = await this.adminRepository.findAllByClause({
-          where: { id: { [Op.notIn]: [userId] } },
+          where: baseWhereClause,
+          order: orderClause,
         });
 
         return {
@@ -51,9 +78,10 @@ export class UsersService {
 
       const { rows: users, count: total } =
         await this.adminRepository.findAndCountAllByClause({
-          where: { id: { [Op.notIn]: [userId] } },
+          where: baseWhereClause,
           limit,
           offset,
+          order: orderClause,
         });
 
       return {

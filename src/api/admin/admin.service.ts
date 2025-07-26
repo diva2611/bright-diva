@@ -49,19 +49,46 @@ export class AdminService {
         throw new UnauthorizedException('You are not authorized');
       }
 
+      const whereClause: any = {
+        id: { [Op.ne]: userId },
+      };
+
+      if (query?.search) {
+        const searchValue = `%${query.search}%`;
+
+        whereClause[Op.or] = [
+          { name: { [Op.like]: searchValue } },
+          { emailId: { [Op.like]: searchValue } },
+          { username: { [Op.like]: searchValue } },
+          { phoneNo: { [Op.like]: searchValue } },
+          { role: { [Op.like]: searchValue } },
+        ];
+      }
+
+      let orderClause: any = [['createdAt', 'DESC']];
+
+      if (query?.sortBy) {
+        const [field, direction] = query.sortBy.split(':');
+        if (field && ['asc', 'desc'].includes(direction?.toLowerCase())) {
+          orderClause = [[field, direction.toUpperCase()]];
+        }
+      }
+
       let cashData: Admin[];
       let total: number;
 
       if (query.page === 0) {
         cashData = await this.adminRepository.findAllByClause({
-          where: { id: { [Op.ne]: userId } },
+          where: whereClause,
+          order: orderClause,
         });
         total = cashData.length;
       } else {
         const offset = (query.page - 1) * query.limit;
         const { rows, count } =
           await this.adminRepository.findAndCountAllByClause({
-            where: { id: { [Op.ne]: userId } },
+            where: whereClause,
+            order: orderClause,
             limit: query.limit,
             offset,
           });
