@@ -74,7 +74,27 @@ export class OrderService {
         throw new NotFoundException('Currency not found');
       }
 
-      let amountInHkd = orderData.amountOfDelivery;
+      let amountInHkd = amountOfDelivery;
+
+      const existingOrders = await this.orderRepository.findAllByClause({
+        where: { invoiceNumber: orderData.invoiceNumber },
+      });
+
+      const totalExistingOrderAmount = existingOrders.reduce(
+        (sum, order) => sum + parseFloat(order.amountInHkd.toString()),
+        0,
+      );
+
+      const totalOrderAmount = totalExistingOrderAmount + amountInHkd;
+
+      if (
+        totalOrderAmount > parseFloat(invoiceDetails.amountInHkd.toString())
+      ) {
+        throw new HttpException(
+          `Order amount exceeds invoice limit. Available: ${invoiceDetails.amountInHkd - totalExistingOrderAmount} HKD, Requested: ${amountInHkd} HKD`,
+          400,
+        );
+      }
 
       if (orderData.currency === Currency.CNY) {
         amountInHkd = orderData.amountOfDelivery / currencyDetails.hkdToCny;
