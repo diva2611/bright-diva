@@ -11,7 +11,6 @@ import { InvoiceBase } from '../Invoice/Invoice.base';
 import { CustomerBase } from '../Customer/Customer.base';
 import { AdminBase } from '../Admin/Admin.base';
 
-
 type OrderAttributes =
   | 'invoiceNumber'
   | 'amountOfDelivery'
@@ -77,6 +76,12 @@ export class OrderBase extends Model<OrderBase, OrderCreationAttributes> {
     allowNull: false,
   })
   deliveredUnits!: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  deliveredBy!: string;
 
   @Column({
     type: DataType.DECIMAL(64, 20),

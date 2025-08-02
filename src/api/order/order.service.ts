@@ -206,6 +206,7 @@ export class OrderService {
           { amountInHkd: { [Op.like]: searchValue } },
           { deliveredUnits: { [Op.like]: searchValue } },
           { currency: { [Op.like]: searchValue } },
+          { deliveredBy: { [Op.like]: searchValue } },
           {
             partialDelivery: {
               [Op.eq]:
@@ -334,6 +335,14 @@ export class OrderService {
         throw new NotFoundException('Currency not found');
       }
 
+      const invoiceDetails = await this.invoiceRepository.findOneByClause({
+        where: { invoiceNumber: order.invoiceNumber },
+      });
+
+      if (!invoiceDetails) {
+        throw new NotFoundException('Associated invoice not found');
+      }
+
       let amountInHkd = updateOrderDto.amountOfDelivery;
 
       if (
@@ -348,6 +357,27 @@ export class OrderService {
       ) {
         amountInHkd =
           updateOrderDto.amountOfDelivery / currencyDetails.hkdToMop;
+      }
+
+      const existingOrders = await this.orderRepository.findAllByClause({
+        where: { invoiceNumber: order.invoiceNumber },
+      });
+
+      const totalOtherOrdersAmount = existingOrders
+        .filter((o) => o.id !== order.id)
+        .reduce((sum, o) => sum + parseFloat(o.amountInHkd.toString()), 0);
+
+      const updatedTotalAmount = totalOtherOrdersAmount + amountInHkd;
+
+      if (
+        updatedTotalAmount > parseFloat(invoiceDetails.amountInHkd.toString())
+      ) {
+        throw new HttpException(
+          `Order amount exceeds invoice limit. Available: ${
+            invoiceDetails.amountInHkd - totalOtherOrdersAmount
+          } HKD, Requested: ${amountInHkd} HKD`,
+          400,
+        );
       }
 
       const success = await this.orderRepository.updateById(order.id, {

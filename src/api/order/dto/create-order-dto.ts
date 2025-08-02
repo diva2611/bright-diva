@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsNumber,
   IsBoolean,
+  IsOptional,
 } from 'class-validator';
 import { Currency } from '../../../common/enum/currency.enum';
 
@@ -31,4 +32,8 @@ export class CreateOrderDto {
 
   @IsNumber()
   deliveredUnits: number;
+
+  @IsOptional()
+  @IsString()
+  deliveredBy?: string;
 }
