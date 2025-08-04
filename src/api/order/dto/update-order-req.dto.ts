@@ -35,4 +35,8 @@ export class UpdateOrderDto {
   @IsNumber()
   @IsOptional()
   deliveredUnits?: number;
+
+  @IsOptional()
+  @IsString()
+  deliveredBy?: string;
 }
