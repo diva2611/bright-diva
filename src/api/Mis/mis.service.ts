@@ -16,6 +16,7 @@ import { MisFilterQueryDto, MisFilterType } from './dto/mis-filter-query.dto';
 import { Op } from 'sequelize';
 import { GenerateMisReportResDto } from './dto/generate-mis-report-data.res';
 import { OrderRepository } from '../../repositories/order/order.repository';
+import { Customer } from 'src/models/Customer/Customer.model';
 
 @Injectable()
 export class MisService {
@@ -78,13 +79,20 @@ export class MisService {
         case MisFilterType.INVOICE:
           data = await this.invoiceRepository.findAllByClause({
             where: filter,
+            include: [{ model: Customer, as: 'customer' }],
           });
           break;
         case MisFilterType.ORDER:
-          data = await this.orderRepository.findAllByClause({ where: filter });
+          data = await this.orderRepository.findAllByClause({
+            where: filter,
+            include: [{ model: Customer, as: 'customer' }],
+          });
           break;
         case MisFilterType.CASH:
-          data = await this.cashRepository.findAllByClause({ where: filter });
+          data = await this.cashRepository.findAllByClause({
+            where: filter,
+            include: [{ model: Customer, as: 'customer' }],
+          });
           break;
         default:
           throw new BadRequestException('Invalid MIS report type');
@@ -94,7 +102,7 @@ export class MisService {
         throw new NotFoundException('No records found for the given filters');
       }
 
-       const formattedData = data.map((record) => {
+      const formattedData = data.map((record) => {
         const values = { ...record.dataValues };
 
         if (values.amount !== undefined) {
@@ -110,6 +118,15 @@ export class MisService {
             2,
           );
         }
+
+        if (record.customer && record.customer.contactPersonName) {
+          values.customerName = record.customer.contactPersonName;
+        } else {
+          values.customerName = 'N/A';
+        }
+
+        delete values.customerId;
+        delete values.customer;
 
         return values;
       });
