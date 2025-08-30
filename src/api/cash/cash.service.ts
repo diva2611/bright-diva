@@ -150,8 +150,7 @@ export class CashService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      const whereClause: any =
-        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+      const whereClause: any = {};
       const searchValue = `%${query.search}%`;
 
       if (query?.search) {
@@ -248,25 +247,12 @@ export class CashService {
 
   async getCashById(
     id: string,
-    userId: string,
   ): Promise<{ success: boolean; statusCode: number; data: Cash }> {
     try {
-      const adminData = await this.adminRepository.findOneByClause({
-        where: { id: userId },
+      const cash: Cash = await this.cashRepository.findOneByClause({
+        where: { id },
+        include: [Customer],
       });
-
-      let cash: Cash;
-      if (adminData.role === Role.ADMIN) {
-        cash = await this.cashRepository.findOneByClause({
-          where: { id },
-          include: [Customer],
-        });
-      } else {
-        cash = await this.cashRepository.findOneByClause({
-          where: { id, createdBy: userId },
-          include: [Customer],
-        });
-      }
 
       if (!cash) {
         throw new NotFoundException('Cash not found');
@@ -296,10 +282,7 @@ export class CashService {
 
       const cash = await this.cashRepository.findById(id);
 
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== cash.createdBy
-      ) {
+      if (adminData.role === Role.EXECUTIVE) {
         throw new UnauthorizedException(
           'You are not authorized to delete the cash',
         );
@@ -338,15 +321,13 @@ export class CashService {
         where: { id: userId },
       });
 
-      const cash = await this.cashRepository.findById(id);
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== cash.createdBy
-      ) {
+      if (adminData.role === Role.EXECUTIVE) {
         throw new UnauthorizedException(
           'You are not authorized to edit the cash',
         );
       }
+
+      const cash = await this.cashRepository.findById(id);
 
       if (!cash) {
         throw new NotFoundException(`Cash with ID ${id} not found`);

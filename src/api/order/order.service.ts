@@ -141,28 +141,11 @@ export class OrderService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let order: Order;
+      const order: Order = await this.orderRepository.findOneByClause({
+        where: { id },
+        include: [Customer],
+      });
 
-      if (adminData.role === Role.EXECUTIVE) {
-        order = await this.orderRepository.findOneByClause({
-          where: { id, createdBy: userId },
-          include: [Customer],
-        });
-      } else {
-        order = await this.orderRepository.findOneByClause({
-          where: { id },
-          include: [Customer],
-        });
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== order.createdBy
-      ) {
-        throw new UnauthorizedException(
-          'You are not authorized to see the order',
-        );
-      }
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found`);
       }
@@ -194,8 +177,7 @@ export class OrderService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      const whereClause: any =
-        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+      const whereClause: any = {};
       const searchValue = `%${query.search}%`;
 
       if (query?.search) {
@@ -304,24 +286,15 @@ export class OrderService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let order: Order;
-
       if (adminData.role === Role.EXECUTIVE) {
-        order = await this.orderRepository.findOneByClause({
-          where: { id, createdBy: userId },
-        });
-      } else {
-        order = await this.orderRepository.findById(id);
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== order.createdBy
-      ) {
         throw new UnauthorizedException(
           'You are not authorized to edit the order',
         );
       }
+
+      const order: Order = await this.orderRepository.findOneByClause({
+        where: { id },
+      });
 
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found`);
@@ -417,24 +390,16 @@ export class OrderService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let order: Order;
-
       if (adminData.role === Role.EXECUTIVE) {
-        order = await this.orderRepository.findOneByClause({
-          where: { id, createdBy: userId },
-        });
-      } else {
-        order = await this.orderRepository.findById(id);
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== order.createdBy
-      ) {
         throw new UnauthorizedException(
           'You are not authorized to delete the order',
         );
       }
+
+      const order: Order = await this.orderRepository.findOneByClause({
+        where: { id },
+      });
+
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found`);
       }

@@ -97,23 +97,10 @@ export class CustomerService {
 
   async getCustomerById(
     id: string,
-    userId: string,
   ): Promise<{ customer: Customer; statusCode: number }> {
     try {
-      const adminData = await this.adminRepository.findOneByClause({
-        where: { id: userId },
-      });
-
       const customer = await this.customerRepository.findById(id);
 
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== customer.createdBy
-      ) {
-        throw new UnauthorizedException(
-          'You are not authorized to see the customers data',
-        );
-      }
       if (!customer) {
         throw new NotFoundException(`Customer with ID ${id} not found`);
       }

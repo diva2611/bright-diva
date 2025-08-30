@@ -40,10 +40,8 @@ export class CustomerController {
   @HttpCode(HttpStatus.OK)
   async getCustomerById(
     @Param('id') id: string,
-    @Req() request: Request,
   ): Promise<{ customer: Customer; statusCode: number }> {
-    const { id: userId } = request.user as Admin;
-    return await this.customerService.getCustomerById(id, userId);
+    return await this.customerService.getCustomerById(id);
   }
 
   @Put('/edit/:id')

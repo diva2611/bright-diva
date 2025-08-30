@@ -41,72 +41,27 @@ export class DashboardService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let totalOrders: Order[];
-      let totalInvoices: Invoice[];
-      let totalCash: Cash[];
+      const dateWhere = { createdAt: { [Op.between]: [startOfDay, endOfDay] } };
 
-      if (adminData.role === Role.EXECUTIVE) {
-        totalOrders = await this.orderRepository.findAllByClause({
-          where: {
-            createdBy: userId,
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
+      const totalOrders: Order[] = await this.orderRepository.findAllByClause({
+        where: dateWhere,
+      });
+
+      const totalInvoices: Invoice[] =
+        await this.invoiceRepository.findAllByClause({
+          where: dateWhere,
         });
-        totalInvoices = await this.invoiceRepository.findAllByClause({
-          where: {
-            createdBy: userId,
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
-        });
-        totalCash = await this.cashRepository.findAllByClause({
-          where: {
-            createdBy: userId,
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
-        });
-      } else {
-        totalOrders = await this.orderRepository.findAllByClause({
-          where: {
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
-        });
-        totalInvoices = await this.invoiceRepository.findAllByClause({
-          where: {
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
-        });
-        totalCash = await this.cashRepository.findAllByClause({
-          where: {
-            createdAt: {
-              [Op.gte]: startOfDay,
-              [Op.lt]: endOfDay,
-            },
-          },
-        });
-      }
+
+      const totalCash: Cash[] = await this.cashRepository.findAllByClause({
+        where: dateWhere,
+      });
 
       const totalOrderValue = totalOrders.length;
-
+      const totalInvoice = totalInvoices.length;
       const totalDeliveredValue = totalOrders.filter(
-        (order) => !order.partialDelivery,
+        (o) => !o.partialDelivery,
       ).length;
-
-      const nonDeliveredValue = totalOrderValue - totalDeliveredValue;
+      const nonDeliveredValue = totalInvoice - totalDeliveredValue;
 
       const totalCashPickup = totalInvoices.reduce(
         (sum, cash) => sum + Number(cash.amountInHkd),
@@ -121,6 +76,7 @@ export class DashboardService {
       const totalNetDue = totalCashPickup - deliveredCashPickup;
 
       return {
+        totalInvoice,
         totalOrderValue,
         totalDeliveredValue,
         nonDeliveredValue,

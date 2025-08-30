@@ -21,4 +21,7 @@ export class FinancialSummaryDto {
 
   @IsNumber()
   statusCode: number;
+
+   @IsNumber()
+  totalInvoice: number;
 }

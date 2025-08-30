@@ -45,8 +45,7 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      const whereClause: any =
-        adminData.role === Role.ADMIN ? {} : { createdBy: userId };
+      const whereClause: any = {};
       const searchValue = `%${query.search}%`;
 
       if (query?.search) {
@@ -161,19 +160,10 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let invoice: Invoice;
-
-      if (adminData.role === Role.EXECUTIVE) {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id: invoiceId, createdBy: userId },
-          include: [Customer],
-        });
-      } else {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id: invoiceId },
-          include: [Customer],
-        });
-      }
+      const invoice: Invoice = await this.invoiceRepository.findOneByClause({
+        where: { id: invoiceId },
+        include: [Customer],
+      });
 
       if (!invoice) {
         throw new Error('Invoice not found');
@@ -224,7 +214,7 @@ export class InvoiceService {
     userId: string,
   ): Promise<CreateInvoiceResponseDto> {
     try {
-      const { currency, amount } = invoiceData;
+      const { currency } = invoiceData;
 
       if (!this.conversionRates[currency]) {
         throw new InternalServerErrorException(
@@ -290,28 +280,11 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let invoice: Invoice;
+      const invoice: Invoice = await this.invoiceRepository.findOneByClause({
+        where: { id },
+        include: [Customer],
+      });
 
-      if (adminData.role === Role.EXECUTIVE) {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id, createdBy: userId },
-          include: [Customer],
-        });
-      } else {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id },
-          include: [Customer],
-        });
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== invoice.createdBy
-      ) {
-        throw new UnauthorizedException(
-          'You are not authorized to see the invoice',
-        );
-      }
       if (!invoice) {
         throw new NotFoundException(`Invoice with ID ${id} not found`);
       }
@@ -358,24 +331,15 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let invoice: Invoice;
-
       if (adminData.role === Role.EXECUTIVE) {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id, createdBy: userId },
-        });
-      } else {
-        invoice = await this.invoiceRepository.findById(id);
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== invoice.createdBy
-      ) {
         throw new UnauthorizedException(
           'You are not authorized to edit the invoice',
         );
       }
+
+      const invoice: Invoice = await this.invoiceRepository.findOneByClause({
+        where: { id },
+      });
 
       if (!invoice) {
         throw new NotFoundException(`Invoice with ID ${id} not found`);
@@ -441,24 +405,16 @@ export class InvoiceService {
         throw new UnauthorizedException('You are not authorized');
       }
 
-      let invoice: Invoice;
-
       if (adminData.role === Role.EXECUTIVE) {
-        invoice = await this.invoiceRepository.findOneByClause({
-          where: { id, createdBy: userId },
-        });
-      } else {
-        invoice = await this.invoiceRepository.findById(id);
-      }
-
-      if (
-        adminData.role === Role.EXECUTIVE &&
-        adminData.id !== invoice.createdBy
-      ) {
         throw new UnauthorizedException(
           'You are not authorized to see the invoice',
         );
       }
+
+      const invoice: Invoice = await this.invoiceRepository.findOneByClause({
+        where: { id },
+      });
+
       if (!invoice) {
         throw new NotFoundException(`Invoice with ID ${id} not found`);
       }

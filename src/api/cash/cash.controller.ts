@@ -58,10 +58,8 @@ export class CashController {
   @HttpCode(HttpStatus.OK)
   async getCashById(
     @Param('id') id: string,
-    @Req() request: Request,
   ): Promise<{ success: boolean; statusCode: number; data: Cash }> {
-    const { id: userId } = request.user as Admin;
-    return await this.cashService.getCashById(id, userId);
+    return await this.cashService.getCashById(id);
   }
 
   @Delete('/delete/:id')
