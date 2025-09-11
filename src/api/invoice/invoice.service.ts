@@ -354,21 +354,13 @@ export class InvoiceService {
       }
 
       let amountInHkd = updateInvoiceDto.amount;
+      console.log(360, amountInHkd, updateInvoiceDto, currencyDetails.hkdToCny);
 
-      if (
-        updateInvoiceDto.currency === Currency.CNY ||
-        invoice.currency === Currency.CNY
-      ) {
+      if (updateInvoiceDto.currency === Currency.CNY) {
         amountInHkd = updateInvoiceDto.amount / currencyDetails.hkdToCny;
-      } else if (
-        updateInvoiceDto.currency === Currency.MOP ||
-        invoice.currency === Currency.MOP
-      ) {
+      } else if (updateInvoiceDto.currency === Currency.MOP) {
         amountInHkd = updateInvoiceDto.amount / currencyDetails.hkdToMop;
-      } else if (
-        updateInvoiceDto.currency === Currency.HKD ||
-        invoice.currency === Currency.HKD
-      ) {
+      } else if (updateInvoiceDto.currency === Currency.HKD) {
         amountInHkd =
           updateInvoiceDto.amount !== undefined &&
           updateInvoiceDto.amount !== null

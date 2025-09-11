@@ -318,22 +318,13 @@ export class OrderService {
 
       let amountInHkd = updateOrderDto.amountOfDelivery;
 
-      if (
-        updateOrderDto.currency === Currency.CNY ||
-        order.currency === Currency.CNY
-      ) {
+      if (updateOrderDto.currency === Currency.CNY) {
         amountInHkd =
           updateOrderDto.amountOfDelivery / currencyDetails.hkdToCny;
-      } else if (
-        updateOrderDto.currency === Currency.MOP ||
-        order.currency === Currency.MOP
-      ) {
+      } else if (updateOrderDto.currency === Currency.MOP) {
         amountInHkd =
           updateOrderDto.amountOfDelivery / currencyDetails.hkdToMop;
-      } else if (
-        updateOrderDto.currency === Currency.HKD ||
-        order.currency === Currency.HKD
-      ) {
+      } else if (updateOrderDto.currency === Currency.HKD) {
         amountInHkd =
           updateOrderDto.amountOfDelivery !== undefined &&
           updateOrderDto.amountOfDelivery !== null

@@ -343,20 +343,11 @@ export class CashService {
 
       let amountInHkd = updateCashDto.amount;
 
-      if (
-        updateCashDto.currency === Currency.CNY ||
-        cash.currency === Currency.CNY
-      ) {
+      if (updateCashDto.currency === Currency.CNY) {
         amountInHkd = updateCashDto.amount / currencyDetails.hkdToCny;
-      } else if (
-        updateCashDto.currency === Currency.MOP ||
-        cash.currency === Currency.MOP
-      ) {
+      } else if (updateCashDto.currency === Currency.MOP) {
         amountInHkd = updateCashDto.amount / currencyDetails.hkdToMop;
-      } else if (
-        updateCashDto.currency === Currency.HKD ||
-        cash.currency === Currency.HKD
-      ) {
+      } else if (updateCashDto.currency === Currency.HKD) {
         amountInHkd =
           updateCashDto.amount !== undefined && updateCashDto.amount !== null
             ? updateCashDto.amount
