@@ -365,8 +365,16 @@ export class InvoiceService {
         invoice.currency === Currency.MOP
       ) {
         amountInHkd = updateInvoiceDto.amount / currencyDetails.hkdToMop;
+      } else if (
+        updateInvoiceDto.currency === Currency.HKD ||
+        invoice.currency === Currency.HKD
+      ) {
+        amountInHkd =
+          updateInvoiceDto.amount !== undefined &&
+          updateInvoiceDto.amount !== null
+            ? updateInvoiceDto.amount
+            : invoice.amount;
       }
-
       const updateDto = { amountInHkd, ...updateInvoiceDto };
 
       const success = await this.invoiceRepository.updateById(invoice.id, {

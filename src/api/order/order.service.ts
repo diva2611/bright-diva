@@ -330,6 +330,15 @@ export class OrderService {
       ) {
         amountInHkd =
           updateOrderDto.amountOfDelivery / currencyDetails.hkdToMop;
+      } else if (
+        updateOrderDto.currency === Currency.HKD ||
+        order.currency === Currency.HKD
+      ) {
+        amountInHkd =
+          updateOrderDto.amountOfDelivery !== undefined &&
+          updateOrderDto.amountOfDelivery !== null
+            ? updateOrderDto.amountOfDelivery
+            : order.amountOfDelivery;
       }
 
       const existingOrders = await this.orderRepository.findAllByClause({

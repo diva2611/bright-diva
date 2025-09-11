@@ -353,6 +353,14 @@ export class CashService {
         cash.currency === Currency.MOP
       ) {
         amountInHkd = updateCashDto.amount / currencyDetails.hkdToMop;
+      } else if (
+        updateCashDto.currency === Currency.HKD ||
+        cash.currency === Currency.HKD
+      ) {
+        amountInHkd =
+          updateCashDto.amount !== undefined && updateCashDto.amount !== null
+            ? updateCashDto.amount
+            : cash.amount;
       }
 
       const success = await this.cashRepository.updateById(cash.id, {
